@@ -1,7 +1,9 @@
 package study.querydsl;
 
+import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
+import com.querydsl.core.types.Projections;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import org.assertj.core.api.Assertions;
@@ -10,6 +12,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.Commit;
 import org.springframework.transaction.annotation.Transactional;
+import study.querydsl.dto.MemberDto;
+import study.querydsl.dto.QUserDto;
+import study.querydsl.dto.UserDto;
 import study.querydsl.entity.Member;
 import study.querydsl.entity.QMember;
 import study.querydsl.entity.QTeam;
@@ -288,7 +293,7 @@ public class QuerydslBasicTest {
           // 나이가 가장 많은 회원을 조회
           @Test
           public void subQuery() throws Exception {
-                QMember membersub = new QMember("memberSub")
+                QMember membersub = new QMember("memberSub");
         //given
               List<Member> result =jpaQueryFactory.selectFrom(member)
                       .where(member.age.eq(
@@ -334,8 +339,140 @@ public class QuerydslBasicTest {
         
         //then
      }
-        
 
+     @Test
+     public void simpleProjection() throws Exception {
+         //given
+         List<String> result = jpaQueryFactory
+                 .select(member.username)
+                 .from(member)
+                 .fetch();
+
+
+         for(String name : result){
+             System.out.println(name);
+         }
+
+         //when
+
+         //then
+      }
+
+
+
+      @Test
+      public void tupleProjection() throws Exception {
+          //given
+          List<Tuple> result = jpaQueryFactory
+                  .select(member.username, member.age)
+                  .from(member)
+                  .fetch();
+
+
+          for(Tuple tuple : result){
+              System.out.println(tuple.get(member.username));
+              System.out.println(tuple.get(member.age));
+          }
+
+          //when
+
+          //then
+       }
+
+
+
+       @Test
+       public void findDtoByJPQL() throws Exception {
+           //given
+           List<MemberDto> result = em.createQuery("select new study.querydsl.dto.MemberDto(m.username, m.age) " +
+                           "from Member m", MemberDto.class).getResultList();
+
+
+           //when
+
+           //then
+        }
+
+        @Test
+        public void findDtoBySetter() throws Exception {
+            //given
+            jpaQueryFactory.select(Projections.bean(MemberDto.class,
+                    member.username,
+                    member.age
+            )).from(member)
+                    .fetch();
+
+
+            //when
+
+            //then
+         }
+
+         @Test
+         public void findUserDto() throws Exception {
+             //given
+             List<UserDto> result = jpaQueryFactory.select(Projections.constructor(UserDto.class,
+                     member.username,
+                     member.age
+             )).from(member).fetch();
+
+             for(UserDto memberDto : result){
+                 System.out.println(memberDto);
+             }
+             //when
+
+             //then
+          }
+          
+          @Test
+          public void findDtoByQueryProjection() throws Exception {
+              //given
+              List<UserDto> result = jpaQueryFactory
+                      .select(new QUserDto(member.username, member.age))
+                      .from(member)
+                      .fetch();
+
+              for(UserDto dto : result){
+                  System.out.println(dto);
+              }
+              //when
+              //단점 q 파일을 생성해야 한다.
+              //querydsl 에 대한 dependency 를 가지게 된다. 
+              
+              //then
+           }
+              
+           
+           
+           
+           @Test
+           public void dynamicQuery_BooleanBuilder() throws Exception {
+               //given
+               String usernameParam = "member1";
+               Integer ageParam = 10;
+
+               List<Member> result = searchMember1(usernameParam,ageParam);
+               assertThat(result.size()).isEqualTo(1);
+           //when
+               
+               //then
+            }
+
+    private List<Member> searchMember1(String usernameParam, Integer ageParam) {
+
+        BooleanBuilder builder = new BooleanBuilder();
+        if(usernameParam != null){
+            builder.and(member.username.eq(usernameParam));
+        }
+        if(ageParam != null) {
+            builder.and(member.age.eq(ageParam));
+        }
+
+        return jpaQueryFactory
+                .selectFrom(member)
+                .where(builder)
+                .fetch();
+    }
 
 
 }
