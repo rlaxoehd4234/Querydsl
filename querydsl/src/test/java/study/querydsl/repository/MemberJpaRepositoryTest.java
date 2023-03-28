@@ -4,6 +4,8 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.test.annotation.Commit;
 import org.springframework.transaction.annotation.Transactional;
 import study.querydsl.dto.MemberFormDto;
@@ -26,6 +28,9 @@ class MemberJpaRepositoryTest {
 
     @Autowired
     MemberJpaRepository memberJpaRepository;
+
+    @Autowired
+    MemberRepository memberRepository;
 
     @Test
     public void BasicTest(){
@@ -62,11 +67,9 @@ class MemberJpaRepositoryTest {
         em.persist(member4);
 
         MemberSearchCondition condition = new MemberSearchCondition();
-        condition.setAgeGoe(35);
-        condition.setAgeLoe(40);
-        condition.setTeamName("teamB");
+        PageRequest pageRequest = PageRequest.of(0,3);
 
-        List<MemberFormDto> result = memberJpaRepository.search(condition);
+        Page<MemberFormDto> result = memberRepository.searchPageSimple(condition, pageRequest);
 
         org.assertj.core.api.Assertions.assertThat(result).extracting("username").containsExactly("member4");
 
