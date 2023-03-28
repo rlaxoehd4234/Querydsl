@@ -3,7 +3,10 @@ package study.querydsl;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
+import com.querydsl.core.types.Predicate;
 import com.querydsl.core.types.Projections;
+import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import org.assertj.core.api.Assertions;
@@ -474,5 +477,73 @@ public class QuerydslBasicTest {
                 .fetch();
     }
 
+    @Test
+    public void dynamicQuery_WhereParam() {
+        String usernameParam = "member1";
+        Integer ageParam = 10;
+
+        List<Member> result = searchMember2(usernameParam, ageParam);
+        assertThat(result.size()).isEqualTo(1);
+
+    }
+
+    private List<Member> searchMember2(String usernameParam, Integer ageParam) {
+        return jpaQueryFactory
+                .selectFrom(member)
+                .where(usernameEq(usernameParam),ageEq(ageParam))
+                .fetch();
+    }
+
+    private BooleanExpression ageEq(Integer ageParam) {
+        return ageParam != null ? member.age.eq(ageParam) : null;
+    }
+
+    private BooleanExpression usernameEq(String usernameParam) {
+        return usernameParam != null ? member.username.eq(usernameParam) : null;
+    }
+
+    //광고 상태 isServiceable, 날짜가 InDate
+    private BooleanExpression allEq(String username, Integer age){
+        return usernameEq(username).and(ageEq(age));
+    }
+
+
+    // 벌크 연산 , 영속성 컨텍스트를 무시하고 바로 db로 날라간다.
+    @Test
+    public void bulkUpdate(){
+        jpaQueryFactory
+                .update(member)
+                .set(member.username, "비회원")
+                .where(member.age.lt(28))
+                .execute();
+        em.flush();
+        em.clear();
+
+        List<Member> result =jpaQueryFactory.selectFrom(member).fetch();
+
+        for(Member member : result){
+            System.out.println(member);
+        }
+    }
+
+    @Test
+    public void bulkAdd() {
+        jpaQueryFactory
+                .update(member)
+                .set(member.age,member.age.add(-1))
+                .execute();
+    }
+
+    @Test
+    public void bulkDelete(){
+        jpaQueryFactory
+                .delete(member)
+                .where(member.age.gt(18))
+                .execute();
+    }
+
+    @Test
+    public void sqlFunction() {
+    }
 
 }
