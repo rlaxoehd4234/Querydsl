@@ -542,8 +542,5 @@ public class QuerydslBasicTest {
                 .execute();
     }
 
-    @Test
-    public void sqlFunction() {
-    }
 
 }
